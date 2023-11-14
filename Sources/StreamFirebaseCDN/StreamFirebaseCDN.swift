@@ -24,7 +24,8 @@ public class StreamFirebaseCDN: CDNClient {
     public func uploadAttachment(_ attachment: AnyChatMessageAttachment, progress: ((Double) -> Void)?, completion: @escaping (Result<URL, Error>) -> Void) {
         let payload = attachment.payload
         let storageRef = storage.reference(withPath: configuration.folderName).child(attachment.id.rawValue)
-        let uploadTask = storageRef.putData(payload, metadata: nil) { metadata, error in
+        let metadata: StorageMetadata? =  metadataFactory?(attachment)
+        let uploadTask = storageRef.putData(payload, metadata: metadata) { metadata, error in
             if let error {
                 completion(.failure(error))
                 return
