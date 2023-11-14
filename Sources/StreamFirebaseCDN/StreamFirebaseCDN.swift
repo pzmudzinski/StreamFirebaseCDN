@@ -3,7 +3,7 @@ import StreamChat
 import FirebaseStorage
 
 public class StreamFirebaseCDN: CDNClient {
-    public static var maxAttachmentSize: Int64 { 300 }
+    public static var maxAttachmentSize: Int64 { 20 * 1024 * 1024 }
     
     public struct Configuration {
         let folderName: String
