@@ -9,6 +9,10 @@ public class StreamFirebaseCDN: CDNClient {
         let folderName: String
         
         public static let defaultConfiguration: Configuration = .init(folderName: "attachments")
+        
+        public init(folderName: String) {
+            self.folderName = folderName
+        }
     }
     
     private let storage: Storage

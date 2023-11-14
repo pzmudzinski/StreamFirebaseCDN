@@ -6,7 +6,7 @@ This package lets you use Firebase Storage as custom CDN in [Stream Chat's attac
 
 ### Swift Package Manager
 
-You can add `StreamFirebaseCDN`` to your project via Swift Package Manager by adding the following dependency to your Package.swift:
+You can add `StreamFirebaseCDN` to your project via Swift Package Manager by adding the following dependency to your Package.swift:
 
 ```swift
 dependencies: [
@@ -20,6 +20,8 @@ dependencies: [
 ## Usage
 
 ```swift
+    import StreamFirebaseCDN
+
     static let chatClient: ChatClient = {
         var config = ChatClientConfig(apiKeyString: "something")
          config.customCDNClient = StreamFirebaseCDN()
