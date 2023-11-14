@@ -26,25 +26,31 @@ public class StreamFirebaseCDN: CDNClient {
     }
 
     public func uploadAttachment(_ attachment: AnyChatMessageAttachment, progress: ((Double) -> Void)?, completion: @escaping (Result<URL, Error>) -> Void) {
-        let payload = attachment.payload
         let storageRef = storage.reference(withPath: configuration.folderName).child(attachment.id.rawValue)
         let metadata: StorageMetadata? =  metadataFactory?(attachment)
-        let uploadTask = storageRef.putData(payload, metadata: metadata) { metadata, error in
-            if let error {
-                completion(.failure(error))
-                return
-            }
-
-            storageRef.downloadURL { url, error in
-                if let error = error {
+        
+        var storageUploadTask: StorageUploadTask?
+        
+        if let localFileURL = attachment.uploadingState?.localFileURL {
+            storageUploadTask = storageRef.putFile(from: localFileURL, metadata: metadata) { metadata, error in
+                if let error {
                     completion(.failure(error))
-                } else if let url = url {
-                    completion(.success(url))
+                    return
+                }
+
+                storageRef.downloadURL { url, error in
+                    if let error = error {
+                        completion(.failure(error))
+                    } else if let url = url {
+                        completion(.success(url))
+                    }
                 }
             }
         }
+        
 
-        uploadTask.observe(.progress) { snapshot in
+
+        storageUploadTask?.observe(.progress) { snapshot in
             let percentComplete = Double(snapshot.progress?.completedUnitCount ?? 0) / Double(snapshot.progress?.totalUnitCount ?? 1)
             progress?(percentComplete)
         }
