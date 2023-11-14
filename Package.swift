@@ -4,7 +4,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "stream-firebase-cdn",
+    name: "StreamFirebaseCDN",
     platforms: [.iOS(.v15)],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
