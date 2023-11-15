@@ -76,6 +76,28 @@ Each storage reference can have some metadata attached:
         })
 ```
 
+## Storage rules
+
+Remember to setup correct [storage rules](https://firebase.google.com/docs/storage/security) so client will be able to upload files directly into bucket.
+This is an example (allowing to have attachment with maximum size of 8MB):
+
+```
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    match /attachments/{images=**} {
+        allow read: if true;
+        allow write: if request.auth != null && request.resource.size < 8 * 1024 * 1024
+    }
+  }
+}
+
+```
+
 ## License
 
 StreamFirebaseCDN is available under the MIT license. See the LICENSE file for more info.
