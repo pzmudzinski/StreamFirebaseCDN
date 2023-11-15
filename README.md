@@ -32,11 +32,48 @@ dependencies: [
 
 ## Configuration
 
+### Directory
+
 By default CDN client will use default bucket and `attachments` directory for upload. You can configure it using `Configuration` and/or passing different instance of `FirebaseStorage` into constructor.
 
 ```swift
 let customConfig = StreamFirebaseCDN.Configuration(folderName: "customFolder")
 let customCDN = StreamFirebaseCDN(configuration: customConfig)
+```
+
+### Changing default path for stored files
+
+This will store files under `{channelId}/{fileName}` directory:
+
+```swift
+       let cdnClient = StreamFirebaseCDN(metadataFactory: { attachment in
+            return nil
+        }, idFactory: { attachment in
+            if let localFileURL = attachment.uploadingState?.localFileURL {
+                let cid = attachment.id.cid.rawValue
+                return "\(cid)/\(localFileURL.lastPathComponent)"
+            } else {
+                return attachment.id.rawValue
+            }
+        })
+```
+
+### Custom metadata
+
+Each storage reference can have some metadata attached:
+
+```swift
+       let cdnClient = StreamFirebaseCDN(metadataFactory: { attachment in
+            let metadata = StorageMetadata()
+            metadata.customMetadata = [
+                "cid": attachment.id.cid.rawValue,
+                "messageId": attachment.id.messageId,
+                "index": String(describing: attachment.id.index),
+                "type": attachment.type.rawValue
+            ]
+
+            return metadata
+        })
 ```
 
 ## License
