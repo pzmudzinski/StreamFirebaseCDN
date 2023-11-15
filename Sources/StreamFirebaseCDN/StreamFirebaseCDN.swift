@@ -18,16 +18,20 @@ public class StreamFirebaseCDN: CDNClient {
     private let storage: Storage
     private let configuration: Configuration
     private let metadataFactory: ((AnyChatMessageAttachment) -> StorageMetadata?)?
+    private let idFactory: ((AnyChatMessageAttachment) -> String)?
     
-    public init(storage: Storage = .storage(), configuration: Configuration = .defaultConfiguration, metadataFactory: ((AnyChatMessageAttachment) -> StorageMetadata?)? = nil) {
+    public init(storage: Storage = .storage(), configuration: Configuration = .defaultConfiguration, metadataFactory: ((AnyChatMessageAttachment) -> StorageMetadata?)? = nil, idFactory: ((AnyChatMessageAttachment) -> String)? = nil) {
         self.storage = storage
         self.configuration = configuration
         self.metadataFactory = metadataFactory
+        self.idFactory = idFactory
     }
 
     public func uploadAttachment(_ attachment: AnyChatMessageAttachment, progress: ((Double) -> Void)?, completion: @escaping (Result<URL, Error>) -> Void) {
-        let storageRef = storage.reference(withPath: configuration.folderName).child(attachment.id.rawValue)
-        let metadata: StorageMetadata? =  metadataFactory?(attachment)
+        let storageChildId = idFactory?(attachment) ?? attachment.id.rawValue
+        
+        let storageRef = storage.reference(withPath: configuration.folderName).child(storageChildId)
+        let metadata: StorageMetadata? = metadataFactory?(attachment)
         
         var storageUploadTask: StorageUploadTask?
         
@@ -48,7 +52,6 @@ public class StreamFirebaseCDN: CDNClient {
             }
         }
         
-
 
         storageUploadTask?.observe(.progress) { snapshot in
             let percentComplete = Double(snapshot.progress?.completedUnitCount ?? 0) / Double(snapshot.progress?.totalUnitCount ?? 1)
