@@ -1,6 +1,7 @@
 import Foundation
 import StreamChat
 import FirebaseStorage
+import os
 
 public class StreamFirebaseCDN: CDNClient {
     public static var maxAttachmentSize: Int64 = 20 * 1024 * 1024
@@ -15,6 +16,7 @@ public class StreamFirebaseCDN: CDNClient {
         }
     }
     
+    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "", category: "StreamFirebaseCDN")
     private let storage: Storage
     private let configuration: Configuration
     private let metadataFactory: ((AnyChatMessageAttachment) -> StorageMetadata?)?
@@ -28,7 +30,9 @@ public class StreamFirebaseCDN: CDNClient {
     }
 
     public func uploadAttachment(_ attachment: AnyChatMessageAttachment, progress: ((Double) -> Void)?, completion: @escaping (Result<URL, Error>) -> Void) {
+        logger.trace("upload attachment started")
         let storageChildId = idFactory?(attachment) ?? attachment.id.rawValue
+        logger.trace("child id generated \(storageChildId)")
         
         let storageRef = storage.reference(withPath: configuration.folderName).child(storageChildId)
         let metadata: StorageMetadata? = metadataFactory?(attachment)
@@ -36,16 +40,21 @@ public class StreamFirebaseCDN: CDNClient {
         var storageUploadTask: StorageUploadTask?
         
         if let localFileURL = attachment.uploadingState?.localFileURL {
-            storageUploadTask = storageRef.putFile(from: localFileURL, metadata: metadata) { metadata, error in
+            logger.trace("found local file URL \(localFileURL.absoluteString)")
+            storageUploadTask = storageRef.putFile(from: localFileURL, metadata: metadata) { [weak self] metadata, error in
                 if let error {
+                    self?.logger.warning("failed to upload \(error)")
                     completion(.failure(error))
                     return
                 }
+                self?.logger.trace("upload succesful, generating download url")
 
-                storageRef.downloadURL { url, error in
+                storageRef.downloadURL { [weak self] url, error in
                     if let error = error {
+                        self?.logger.warning("failed to generate download url \(error)")
                         completion(.failure(error))
                     } else if let url = url {
+                        self?.logger.notice("url generated")
                         completion(.success(url))
                     }
                 }
@@ -53,9 +62,9 @@ public class StreamFirebaseCDN: CDNClient {
         }
         
 
-        storageUploadTask?.observe(.progress) { snapshot in
-            let percentComplete = Double(snapshot.progress?.completedUnitCount ?? 0) / Double(snapshot.progress?.totalUnitCount ?? 1)
-            progress?(percentComplete)
+        storageUploadTask?.observe(.progress) { [weak self] snapshot in
+            self?.logger.trace("upload progress \(snapshot.progress?.fractionCompleted ?? 0)")
+            progress?(snapshot.progress?.fractionCompleted ?? 0)
         }
     }
     
