@@ -4,6 +4,9 @@ import FirebaseStorage
 import os
 
 public class StreamFirebaseCDN: CDNClient {
+    public enum CDNError: Error {
+        case attachmentAlreadyUploaded
+    }
     public static var maxAttachmentSize: Int64 = 20 * 1024 * 1024
     
     public struct Configuration {
@@ -35,13 +38,11 @@ public class StreamFirebaseCDN: CDNClient {
         logger.trace("child id generated \(storageChildId)")
         
         let storageRef = storage.reference(withPath: configuration.folderName).child(storageChildId)
-        let metadata: StorageMetadata? = metadataFactory?(attachment)
-        
-        var storageUploadTask: StorageUploadTask?
+        let metadata = metadataFactory?(attachment)
         
         if let localFileURL = attachment.uploadingState?.localFileURL {
             logger.trace("found local file URL \(localFileURL.absoluteString)")
-            storageUploadTask = storageRef.putFile(from: localFileURL, metadata: metadata) { [weak self] metadata, error in
+            let storageUploadTask = storageRef.putFile(from: localFileURL, metadata: metadata) { [weak self] metadata, error in
                 if let error {
                     self?.logger.warning("failed to upload \(error)")
                     completion(.failure(error))
@@ -59,12 +60,13 @@ public class StreamFirebaseCDN: CDNClient {
                     }
                 }
             }
-        }
-        
-
-        storageUploadTask?.observe(.progress) { [weak self] snapshot in
-            self?.logger.trace("upload progress \(snapshot.progress?.fractionCompleted ?? 0)")
-            progress?(snapshot.progress?.fractionCompleted ?? 0)
+            
+            storageUploadTask.observe(.progress) { [weak self] snapshot in
+                self?.logger.trace("upload progress \(snapshot.progress?.fractionCompleted ?? 0)")
+                progress?(snapshot.progress?.fractionCompleted ?? 0)
+            }
+        } else {
+            completion(.failure(CDNError.attachmentAlreadyUploaded))
         }
     }
     
