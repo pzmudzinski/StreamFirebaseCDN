@@ -7,7 +7,10 @@ public class StreamFirebaseCDN: CDNClient {
     public enum CDNError: Error {
         case attachmentAlreadyUploaded
     }
-    public static var maxAttachmentSize: Int64 = 20 * 1024 * 1024
+    /**
+            Maximum by default. Actual value should be controlled by [security rules](https://firebase.google.com/docs/storage/security).
+     */
+    public static var maxAttachmentSize: Int64 = .max
     
     public struct Configuration {
         let folderName: String
